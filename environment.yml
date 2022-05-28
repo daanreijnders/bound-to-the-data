@@ -1,0 +1,19 @@
+name: bound
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.8
+  - jupyter
+  - jupyterlab
+  - numpy
+  - cfgrib  # meteo data
+  - matplotlib # debugging with plots
+  - xarray  # field operation
+  - metpy   # meteo units
+  - scipy   # optimize, for the dispersion relation
+  - netcdf4 # loading fields
+  - pydap   # data download
+  - docopt  # for pydap
+  - lxml    # for pydap, via BS4
+  - pip:
+    - -r requirements.txt

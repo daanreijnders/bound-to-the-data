@@ -17,7 +17,7 @@ import os
 import ftplib
 
 
-# Initiate the logger
+# Initiate the logging
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s - %(message)s', 
                     level=logging.INFO, 
                     datefmt='%Y-%m-%d %H:%M:%S')
@@ -374,7 +374,7 @@ def load_bathymetry(credentials = None):
     check_dir("cache")
     if not os.path.isfile(bathy_path):
         if not credentials:
-            raise RuntimeError, "Bathymetry absent. Credentials necessary."
+            raise RuntimeError("Bathymetry absent. Credentials necessary.")
         download_bathymetry(credentials)
     logging.info("Loading bathymetry")
     bathy = xr.open_dataset(bathy_path)
@@ -770,18 +770,18 @@ class point_conditions:
 if __name__ == 'main':
     parser = argparse.ArgumentParser(description='Loading of environmental data for Bound to the Miraculous.')
     
-    parser.add_argument('lon', metavar='longitude', type=float, help='Longitude, ranging from -180 to 180'.)
-    parser.add_argument('lat', metavar='longitude', type=float, help='Latitude, ranging from -90 to 90'.)
+    parser.add_argument('lon', metavar='longitude', type=float, help='Longitude, ranging from -180 to 180.')
+    parser.add_argument('lat', metavar='longitude', type=float, help='Latitude, ranging from -90 to 90.')
     parser.add_argument('timestamp', metavar='timestamp', type=str, default=None, 
                         help="Timestamp for which to load the data. Format: YYYY-MM-DD-HH-MM")
     parser.add_argument('cred', metavar='CMEMS_credentials', type=str, default=None,
                         help='Copernicus Marine Environment Monitoring Services credential file. This should be a JSON file with `username` and `password`.')
-    parser.add_argument('download_atlantic' type=bool, default=True, help='Download the whole of the North Atlantic domain.')
+    parser.add_argument('download_atlantic', type=bool, default=True, help='Download the whole of the North Atlantic domain.')
     
     
     args = parser.parse_args()
     
-    logger.info('Loading credentials.')
+    logging.info('Loading credentials.')
     if args.cred:
         cmems_credentials = load_credentials(args.cred)
     else:
@@ -797,22 +797,22 @@ if __name__ == 'main':
 
     timestamp = datetime(ts_year, ts_month, ts_day, ts_hour, ts_minutes)
 
-    logger.info('Loading bathymetry.')
-    bathy_data = load_bathymetry(cmemes_credentials)
+    logging.info('Loading bathymetry.')
+    bathy_data = load_bathymetry(cmems_credentials)
     
 
-    logger.info('Loading datasets.')
+    logging.info('Loading datasets.')
     if args.download_atlantic:
-        logger.info("Dataset extent: North Atlantic")
+        logging.info("Dataset extent: North Atlantic")
         atmospheric_data = load_gfs_online((-90, 23), (0, 80), timestamp)
         wave_data = load_cmems_wave_data_online(cmems_credentials, (-90, 23), (0, 80), timestamp)
         phys_data = load_cmems_phys_data_online(cmems_credentials, (-90, 23), (0, 80), timestamp)
         bgc_data = load_cmems_bio_data_online(cmems_credentials, (-90, 23), (0, 80), timestamp)
     else:
-        raise NotImplementedError, "For now only full Atlantic downloads are implemented."
+        raise NotImplementedError("For now only full Atlantic downloads are implemented.")
     
 
-    logger.info(f"Extracting conditions for lon: {args.lon:.3f}, lat: {args.lat:.3f}")
+    logging.info(f"Extracting conditions for lon: {args.lon:.3f}, lat: {args.lat:.3f}")
     conditions = point_conditions(args.lon, args.lat, timestamp)
     conditions.load_atmospheric_data(atmospheric_data)
     conditions.load_bathy_data(bathy_data)
@@ -820,8 +820,10 @@ if __name__ == 'main':
     conditions.load_phys_data(phys_data)
     conditions.load_bgc_data(bgc_data)
 
-    check_dir("output"):
+    if check_dir("output"):
         conditions.json_dump(f"output/conditions_lon_{args.lon:.3f}_lat_{args.lat:.3f}_time_{ts_str}.json")
+
+    print("Succes.")
         
 
 
