@@ -15,5 +15,6 @@ dependencies:
   - pydap   # data download
   - docopt  # for pydap
   - lxml    # for pydap, via BS4
+  - pip
   - pip:
     - -r requirements.txt
