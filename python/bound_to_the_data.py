@@ -30,7 +30,7 @@ logger = logging.getLogger("Bound")
      CREDENTIALS
 ------------------------
 """
-def load_credentials(path = "../credentials.json"):
+def load_credentials(path = "credentials.json"):
     """
     Load CMEMS credentials JSON file. Must contain keys `username` and `password`.
     """
@@ -389,120 +389,7 @@ class point_conditions:
                                     "units" : "1 = sea ; 0 = land"}
         
         
-    def load_wave_data(self, dataset):
-        """
-        parameters
-        ----------
-        atmospheric_data : xr.Dataset
-            CMEMS wave dataset with conditions that we want to use.
-        """
-        assert type(dataset) == xr.core.dataset.Dataset
-        if not 'bathy' in self.conditions:
-            logger.warning("Bathymetric data is necessary for determining wave parameters. Wavelength cannot be computed.")
-        waved_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear").compute()
-        logger.info('Loading wave data.')
-
-        for variable in list(waved_interp.variables):
-            if variable not in ['longitude', 'latitude', 'time']:
-                logger.info(f"Downloading variable {variable}")
-                self.conditions[variable] = {"data" : float(waved_interp[variable]),
-                                             "description" : waved_interp[variable].long_name,
-                                             "units" : waved_interp[variable].units}
-        
-        peak_wavelength, peak_velocity = physics.wavelength_velocity(self.conditions['VTPK']['data'], self.depth)
-        self.conditions['VLPK'] = {"data" : peak_wavelength,
-                                 "description" : "Wavelength of wave at spectral peak",
-                                 "units" : "m"}
-        self.conditions['VSPK'] = {"data" : peak_velocity,
-                                 "description" : "Speed of wave at spectral peak",
-                                 "units" : "m/s"}
-        
-        mean_wavelength, mean_velocity = physics.wavelength_velocity(self.conditions['VTM10']['data'], self.depth)
-        self.conditions['VLM0110'] = {"data" : mean_wavelength,
-                                 "description" : "mean wavelength from variance spectral density",
-                                 "units" : "m"}
-        self.conditions['VSM0110'] = {"data" : mean_velocity,
-                                 "description" : "mean speed from variance spectral density",
-                                 "units" : "m/s"}
-        
-        SW1_wavelength, SW1_velocity = physics.wavelength_velocity(self.conditions['VTM01_SW1']['data'], self.depth)
-        self.conditions['VLM01_SW1'] = {"data" : SW1_wavelength,
-                                 "description" : "Spectral moments (0,1) primary swell wave wavelength",
-                                 "units" : "m"}
-        self.conditions['VSM01_SW1'] = {"data" : SW1_velocity,
-                                 "description" : "Spectral moments (0,1) primary swell wave speed",
-                                 "units" : "m/s"}
-        
-        SW2_wavelength, SW2_velocity = physics.wavelength_velocity(self.conditions['VTM01_SW2']['data'], self.depth)
-        self.conditions['VLM01_SW2'] = {"data" : SW1_wavelength,
-                                 "description" : "Spectral moments (0,1) secondary swell wave wavelength",
-                                 "units" : "m"}
-        self.conditions['VSM01_SW2'] = {"data" : SW1_velocity,
-                                 "description" : "Spectral moments (0,1) secondary swell waved speed",
-                                 "units" : "m/s"}
-        
-        WW_wavelength, WW_velocity = physics.wavelength_velocity(self.conditions['VTM01_WW']['data'], self.depth)
-        self.conditions['VLM01_WW'] = {"data" : WW_wavelength,
-                                 "description" : "Spectral moments (0,1) wind wave wavelength",
-                                 "units" : "m"}
-        self.conditions['VSM01_WW'] = {"data" : WW_velocity,
-                                 "description" : "Spectral moments (0,1) wind wave spee",
-                                 "units" : "m/s"}
-
-        self.conditions['wave_bulletin_date'] = dataset.attrs['date_created']
-        
-
-    def load_phys_data(self, dataset):
-        """
-        Parameters
-        ----------
-        dataset : xr.Dataset
-            CMEMS physics dataset with conditions that we want to use.
-        """
-        assert type(dataset) == xr.core.dataset.Dataset
-        logger.info('Loading physics data.')
-        physd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear")
-        for variable in list(physd_interp.variables):
-            if variable in ['sithick', 'siconc', 'thetao', 'uo', 'vo', 'vsi', 'usi']:
-                logger.info(f"Downloading variable {variable}")
-                self.conditions[variable] = {"data" : float(physd_interp[variable]),
-                                             "description" : physd_interp[variable].long_name,
-                                             "units" : physd_interp[variable].units}
-        self.conditions['phys_bulletin_date'] = dataset.attrs['bulletin_date']
-        
-
-    def load_bgc_data(self, dataset):
-        """
-        Parameters
-        ----------
-        dataset : xr.Dataset
-            CMEMS biogeochemistry dataset with conditions that we want to use.
-        """
-        assert type(dataset) == xr.core.dataset.Dataset
-        logger.info('Loading biogeochemistry data.')
-        bgcd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear") 
-        for variable in list(bgcd_interp.variables):
-            if variable in ['nppv', 'chl']:
-                logger.info(f"Downloading variable {variable}")
-                self.conditions[variable] = {"data" : float(bgcd_interp[variable]),
-                                             "description" : bgcd_interp[variable].long_name,
-                                             "units" : bgcd_interp[variable].units}
-        self.conditions['BGC_bulletin_date'] = dataset.attrs['bulletin_date']
-
-
-    def json_dump(self, path=None):
-        """
-        Dump conditions as JSON file.
-
-        Parameters
-        ----------
-        path : str
-            Path (including filename) to write to
-
-        """
-
-        with open(path, 'w') as dumpFile:
-            json.dump(self.conditions, dumpFile, indent = 4)
+    
 
 
 if __name__ == "__main__":
@@ -511,14 +398,18 @@ if __name__ == "__main__":
     
     parser.add_argument('lon', metavar='longitude', type=float, help='Longitude, ranging from -180 to 180.')
     parser.add_argument('lat', metavar='latitude', type=float, help='Latitude, ranging from -90 to 90.')
-    parser.add_argument('--timestamp', metavar='timestamp', type=str, default=None, 
+    parser.add_argument('--timestamp', metavar='timestamp string YYYY-MM-DD-HH-MM', type=str, default=None, 
                         help="Timestamp for which to load the data. Format: YYYY-MM-DD-HH-MM")
-    parser.add_argument('--cred', metavar='CMEMS_credentials', type=str, default=None,
+    parser.add_argument('--cred', metavar='CMEMS_credentials file', type=str, default=None,
                         help='Copernicus Marine Environment Monitoring Services credential file. This should be a JSON file with `username` and `password`.')
     parser.add_argument('--download_atlantic', type=bool, default=False, help='Download the whole of the North Atlantic domain.')
     
     args = parser.parse_args()
     
+    if len(sys.argv) < 2:
+        parser.print_usage()
+        sys.exit(1)
+
     # Load credentials
     logger.info('Loading credentials.')
     if args.cred:
@@ -552,10 +443,10 @@ if __name__ == "__main__":
         lon = args.lon
         lat = args.lat
 
-    atmospheric_data = downloader.load_gfs_online(lon=lon, lat=lat, time=timestamp)
+    atmospheric_data = downloader.load_gfs_online_multistep(lon=lon, lat=lat, time=timestamp)
     wave_data = downloader.load_cmems_wave_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
     phys_data = downloader.load_cmems_phys_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
-    bgc_data = downloader.load_cmems_bio_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+    bgc_data = downloader.load_cmems_bgc_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
 
     # Extract conditions
     logger.info(f"Extracting conditions for lon: {args.lon:.3f}, lat: {args.lat:.3f}")
@@ -568,10 +459,8 @@ if __name__ == "__main__":
 
     # Dump output
     tools.check_dir("output")
-    conditions.json_dump(f"../output/conditions_lon_{args.lon:.3f}_lat_{args.lat:.3f}_time_{ts_str}.json")
+    conditions.json_dump(f"output/conditions_lon_{args.lon:.3f}_lat_{args.lat:.3f}_time_{ts_str}.json")
 
 
     print("Finished.")
         
-
-

@@ -1,7 +1,9 @@
 cache/
 output/
+!output/example-output.json
 __pycache__/
 credentials.json
 GFS_vars.txt
 DEBUG.ipynb
 .ipynb_checkpoints
+.vscode
