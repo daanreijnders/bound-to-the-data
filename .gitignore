@@ -1,5 +1,7 @@
 cache/
 output/
+__pycache__/
 credentials.json
 GFS_vars.txt
+DEBUG.ipynb
 .ipynb_checkpoints
