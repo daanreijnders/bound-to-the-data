@@ -3,8 +3,6 @@ channels:
   - conda-forge
 dependencies:
   - python>=3.8
-  - jupyter
-  - jupyterlab
   - numpy
   - cfgrib  # meteo data
   - matplotlib # debugging with plots
