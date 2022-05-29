@@ -1,3 +1,5 @@
-credentials.json
 cache/
+output/
+credentials.json
+GFS_vars.txt
 .ipynb_checkpoints

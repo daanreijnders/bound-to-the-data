@@ -12,7 +12,7 @@ dependencies:
   - metpy   # meteo units
   - scipy   # optimize, for the dispersion relation
   - netcdf4 # loading fields
-  - pydap   # data download
+  - pydap>=3.3.0   # data download
   - docopt  # for pydap
   - lxml    # for pydap, via BS4
   - pip
