@@ -13,13 +13,15 @@ The `python` folder contains the code. Almost every function is described with a
     
     Additionally, the following options can be given:
     - `--timestamp`: date as string ('YYYY-MM-DD-HH-MM') for which the data should be valid. If not specified, data is downloaded for the current time. Note that times should be specified close to the current date, as the analysis and forecasts have a limited lead time, while old data may be discarded from servers.
-    - `--cred`: path to [Copernicus Marine Environment Monitoring Service](https://marine.copernicus.eu) credential file (a JSON file with `username` and `password` keys.) An example is given in `example-credentials.json`. You can obtain an account [here](https://resources.marine.copernicus.eu/registration-form).
+    - `--cred`: path to [Copernicus Marine Environment Monitoring Service](https://marine.copernicus.eu) credential file (a JSON file with `username` and `password` keys.)
     - `--download_atlantic`: bool that specifies whether data should be downloaded over the whole North Atlantic (lon = [-90, 23]
         lat = [0, 80]), which may be useful for caching later .
 - `downloader.py`: main downloader code. Downloads data the data sources listed below.
 - `physics.py`: some physics functions. It contains a parameterization for fog risk, and the dispersion relation for cappilary-gravity waves (relating wave frequency (from the data source) to wavenumber and, in turn, wavelength).
 - `tools.py`: miscellaneous helper tools.
 
+## CMEMS Credentials
+Data from the [Copernicus Marine Environment Monitoring Service (CMEMS)](https://marine.copernicus.eu) can only be accessed using a registered CMEMS account. You can obtain an account [here](https://resources.marine.copernicus.eu/registration-form). The login credentials (username and password) should be stored in a JSON file, which has `username` and `password` keys. An example is given in `example-credentials.json`. The script looks for a `credentials.json` by default, but a path to an alternative file can be passed using the `--cred` flag (see the previous section).
 
 ## Usage
 Make sure that [Conda](https://docs.conda.io/en/latest/) is installed. Then create an environment using the `environment.yml` template:
