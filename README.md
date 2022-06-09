@@ -13,7 +13,7 @@ The `python` folder contains the code. Almost every function is described with a
     
     Additionally, the following options can be given:
     - `--timestamp`: date as string ('YYYY-MM-DD-HH-MM') for which the data should be valid. If not specified, data is downloaded for the current time. Note that times should be specified close to the current date, as the analysis and forecasts have a limited lead time, while old data may be discarded from servers.
-    - `--cred`: path to [Copernicus Marine Environment Monitoring Service](https://marine.copernicus.eu) credential file (a JSON file with `username` and `password` keys.) You can obtain an account [here](https://resources.marine.copernicus.eu/registration-form).
+    - `--cred`: path to [Copernicus Marine Environment Monitoring Service](https://marine.copernicus.eu) credential file (a JSON file with `username` and `password` keys.) An example is given in `example-credentials.json`. You can obtain an account [here](https://resources.marine.copernicus.eu/registration-form).
     - `--download_atlantic`: bool that specifies whether data should be downloaded over the whole North Atlantic (lon = [-90, 23]
         lat = [0, 80]), which may be useful for caching later .
 - `downloader.py`: main downloader code. Downloads data the data sources listed below.
