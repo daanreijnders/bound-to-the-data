@@ -260,6 +260,7 @@ def download_bathymetry(credentials):
     
     
     bathy_mask.to_netcdf(trimmed_filename)
+    bathy_mask.close()
     
     if(os.path.isfile(bathy_server_file)):
         os.remove(bathy_server_file)
