@@ -15,10 +15,15 @@ The `python` folder contains the code. Almost every function is described with a
     - `--timestamp`: date as string ('YYYY-MM-DD-HH-MM') for which the data should be valid. If not specified, data is downloaded for the current time. Note that times should be specified close to the current date, as the analysis and forecasts have a limited lead time, while old data may be discarded from servers.
     - `--cred`: path to [Copernicus Marine Environment Monitoring Service](https://marine.copernicus.eu) credential file (a JSON file with `username` and `password` keys.)
     - `--download_atlantic`: bool that specifies whether data should be downloaded over the whole North Atlantic (lon = [-90, 23]
-        lat = [0, 80]), which may be useful for caching later .
+        lat = [0, 80]), which may be useful for caching. The total cache will then be about 300 mb. 
+    - `--filename`: specifies the filename for the JSON output (overrides default).
+    - `--force_download`: forces a fresh data download, ignoring cache.
+    - `--ignore_cache_validity`: do not check whether the cache has valid timesteps for the requested data. This can be useful to load from cache in case of a data outage.
 - `downloader.py`: main downloader code. Downloads data the data sources listed below.
 - `physics.py`: some physics functions. It contains a parameterization for fog risk, and the dispersion relation for cappilary-gravity waves (relating wave frequency (from the data source) to wavenumber and, in turn, wavelength).
 - `tools.py`: miscellaneous helper tools.
+
+A `cache` folder will be created automatically. Bathymetry data and the most recent model data (atmospheric, wave, physics, and biogeochemistry) are stored here.
 
 ## CMEMS Credentials
 Data from the [Copernicus Marine Environment Monitoring Service (CMEMS)](https://marine.copernicus.eu) can only be accessed using a registered CMEMS account. You can obtain an account [here](https://resources.marine.copernicus.eu/registration-form). The login credentials (username and password) should be stored in a JSON file, which has `username` and `password` keys. An example is given in `example-credentials.json`. The script looks for a `credentials.json` by default, but a path to an alternative file can be passed using the `--cred` flag (see the previous section).
@@ -35,6 +40,21 @@ Then you can use the data downloader as follows:
 python3 python/bound_to_the_data.py -30 25
 ```
 This will download and export a JSON file with data at 30°E, 25°N, approximated at the current time.
+
+Useful flags:
+ - `--filename` specifies the filename for the JSON output
+ - `cred` specifies the filename of the `credentials.json`
+parser.add_argument('--filename', metavar='Filename', help="filename for JSON output", type=str, default=None)
+    parser.add_argument('--timestamp', metavar='timestamp string YYYY-MM-DD-HH-MM', type=str, default=None, 
+                        help="Timestamp for which to load the data. Format: YYYY-MM-DD-HH-MM")
+    parser.add_argument('--cred', metavar='CMEMS_credentials file', type=str, default=None,
+                        help='Copernicus Marine Environment Monitoring Services credential file. This should be a JSON file with `username` and `password`.')
+    parser.add_argument('--download_atlantic', action='store_true', help='Download the whole of the North Atlantic domain.')
+    parser.add_argument('--force_download', action='store_true', help="Force a fresh download from server, ignoring cached data")
+    parser.add_argument('--ignore_cache_validity', action='store_true', help="Use cached data, no matter if the requested time is not available in it.")
+
+
+Please use the root of this repository as your working directory. Filepaths are relative to this.
 
 
 ## Output

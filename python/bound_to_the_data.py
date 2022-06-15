@@ -26,27 +26,13 @@ logger = logging.getLogger("Bound")
 
 
 """
-------------------------
-     CREDENTIALS
-------------------------
-"""
-def load_credentials(path = "credentials.json"):
-    """
-    Load CMEMS credentials JSON file. Must contain keys `username` and `password`.
-    """
-    with open(path, 'r') as cred_file:
-        credentials = json.load(cred_file)
-    return credentials
-
-
-"""
 --------------------------
 EXTRACTING THE ENVIRONMENT
 --------------------------
 """
 
 class point_conditions:
-    def __init__(self, lon, lat, timestamp):
+    def __init__(self, lon, lat, timestamp, ignore_cache_validity=False):
         """
         Create a JSON-exportable dictionary with the conditions at a specific point on the globe.
 
@@ -61,18 +47,19 @@ class point_conditions:
         self.lon = lon
         self.lat = lat
         self.conditions = {
-                "lon" : {"data" : lon,
-                         "description" : "Ranges between -180 and 180.",
-                         "units" : "degrees east"},
-                "lat" : {"data" : lat,
-                         "description" : "Ranges between -180 and 180.",
-                         "units" : "degrees east"},
-                "timestamp" : {"data" : str(timestamp),
-                               "description" : "data request time"
-                }
+                "general" : {
+                    "lon" : {"data" : lon},
+                    "lat" : {"data" : lat},
+                    "timestamp" : {"data" : str(timestamp)}
+                },
+                "atmospheric" : {},
+                "waves" : {},
+                "physics" : {},
+                "biogeochemistry" : {}
             }
 
         self.timestamp = timestamp
+        self.ignore_cache_validity = ignore_cache_validity
         
         
     @property
@@ -92,12 +79,12 @@ class point_conditions:
         logger.info('Loading and interpolating atmospheric data.')
 
         if dataset.time.shape == ():
-            ad_interp = dataset.interp(lon=self.lon, lat=self.lat, method="linear").compute()
+            atmos_data_interp = dataset.interp(lon=self.lon, lat=self.lat, method="linear").compute()
         if dataset.time.shape == (1):
-            ad_interp = dataset.interp(lon=self.lon, lat=self.lat, method="linear").isel(time=0).compute()
+            atmos_data_interp = dataset.interp(lon=self.lon, lat=self.lat, method="linear").isel(time=0).compute()
         elif dataset.time.shape == (2,):
             if np.datetime64(self.timestamp) > dataset.time.data[0] and np.datetime64(self.timestamp) < dataset.time.data[-1]:
-                ad_interp = dataset.interp(lon=self.lon, lat=self.lat, time= self.timestamp, method="linear").compute()
+                atmos_data_interp = dataset.interp(lon=self.lon, lat=self.lat, time= self.timestamp, method="linear").compute()
             else:
                 raise RuntimeError("Timestamp does not fall within atmospheric data period.")
         
@@ -111,101 +98,42 @@ class point_conditions:
                                  'precip_percent_frozen', 'tornadoes']
         
         for var in self.atmospheric_vars:
-            self.conditions[var] = {}
+            self.conditions['atmospheric'][var] = {}
         
         # Extract conditions
-        self.conditions['clouds_high']['data'] = float(ad_interp["High_cloud_cover_high_cloud"])
-        self.conditions['clouds_high']['description'] = ad_interp["High_cloud_cover_high_cloud"].long_name
-        self.conditions['clouds_high']['units'] = ad_interp["High_cloud_cover_high_cloud"].units
-        
-        self.conditions['clouds_middle']['data'] = float(ad_interp["Medium_cloud_cover_middle_cloud"])
-        self.conditions['clouds_middle']['description'] = ad_interp["Medium_cloud_cover_middle_cloud"].long_name
-        self.conditions['clouds_middle']['units'] = ad_interp["Medium_cloud_cover_middle_cloud"].units
-        
-        self.conditions['clouds_low']['data'] = float(ad_interp["Low_cloud_cover_low_cloud"])
-        self.conditions['clouds_low']['description'] = ad_interp["Low_cloud_cover_low_cloud"].long_name
-        self.conditions['clouds_low']['units'] = ad_interp["Low_cloud_cover_low_cloud"].units
-
-        self.conditions['temperature_2m']['data'] = float(ad_interp.Temperature_height_above_ground.sel(height_above_ground5 = 2)) - 273.15 # Celcius
-        self.conditions['temperature_2m']['description'] = "Temperature @ 2 meters height"
-        self.conditions['temperature_2m']['units'] = "Degrees Celcius"
-
-        self.conditions['fog_stability_index']['data'] = physics.FSI(self.conditions['temperature_2m']['data'],
-                                                    float(ad_interp.Dewpoint_temperature_height_above_ground) - 273.15,
-                                                    float(ad_interp.Temperature_isobaric.sel(isobaric1 = 85000)) - 273.15,
-                                                    np.sqrt(float(ad_interp["u-component_of_wind_isobaric"].sel(isobaric1 = 85000))**2 + \
-                                                            float(ad_interp["v-component_of_wind_isobaric"].sel(isobaric1 = 85000))**2)
+        self.conditions['atmospheric']['clouds_high']['data'] = float(atmos_data_interp["High_cloud_cover_high_cloud"])
+        self.conditions['atmospheric']['clouds_middle']['data'] = float(atmos_data_interp["Medium_cloud_cover_middle_cloud"])
+        self.conditions['atmospheric']['clouds_low']['data'] = float(atmos_data_interp["Low_cloud_cover_low_cloud"])
+        self.conditions['atmospheric']['temperature_2m']['data'] = float(atmos_data_interp.Temperature_height_above_ground.sel(height_above_ground5 = 2)) - 273.15 # Celcius
+        self.conditions['atmospheric']['fog_stability_index']['data'] = physics.FSI(self.conditions['atmospheric']['temperature_2m']['data'],
+                                                    float(atmos_data_interp.Dewpoint_temperature_height_above_ground) - 273.15,
+                                                    float(atmos_data_interp.Temperature_isobaric.sel(isobaric1 = 85000)) - 273.15,
+                                                    np.sqrt(float(atmos_data_interp["u-component_of_wind_isobaric"].sel(isobaric1 = 85000))**2 + \
+                                                            float(atmos_data_interp["v-component_of_wind_isobaric"].sel(isobaric1 = 85000))**2)
                                                    )
-        self.conditions['fog_stability_index']['description'] = "Computes the Fog Stability Index. \n" +\
-                                                           "     FSI < 31 indicates a high probability of fog formation \n" +\
-                                                           "     31 < FSI < 55 implies moderate risk of fog \n" +\
-                                                           "     FSI > 55 suggests low fog risk. \n" +\
-                                                           "See https://edepot.wur.nl/144635"
-        self.conditions['fog_stability_index']['units'] = ""
+        self.conditions['atmospheric']['fog'] = {'data' : physics.fogginess(fsi = self.conditions['atmospheric']['fog_stability_index']['data'])}
+        self.conditions['atmospheric']['wind_10m_u']['data'] = float(atmos_data_interp["u-component_of_wind_height_above_ground"].sel(height_above_ground4 = 10))
+        self.conditions['atmospheric']['wind_10m_v']['data'] = float(atmos_data_interp["v-component_of_wind_height_above_ground"].sel(height_above_ground4 = 10))
+        self.conditions['atmospheric']['wind_10m_speed']['data'] = np.sqrt(self.conditions['atmospheric']['wind_10m_u']['data']**2 + self.conditions['atmospheric']['wind_10m_v']['data']**2)
+        self.conditions['atmospheric']['wind_10m_angle']['data'] = np.arctan2(self.conditions['atmospheric']['wind_10m_u']['data'], self.conditions['atmospheric']['wind_10m_v']['data'])/np.pi*180
+        if self.conditions['atmospheric']['wind_10m_angle']['data'] < 0:
+            self.conditions['atmospheric']['wind_10m_angle']['data'] += 360
+        self.conditions['atmospheric']['wind_20m_u']['data'] = float(atmos_data_interp["u-component_of_wind_height_above_ground"].sel(height_above_ground4 = 20))
+        self.conditions['atmospheric']['wind_20m_v']['data'] = float(atmos_data_interp["v-component_of_wind_height_above_ground"].sel(height_above_ground4 = 20))
+        self.conditions['atmospheric']['wind_20m_speed']['data'] = np.sqrt(self.conditions['atmospheric']['wind_20m_u']['data']**2 + self.conditions['atmospheric']['wind_20m_v']['data']**2)
+        self.conditions['atmospheric']['wind_20m_angle']['data'] = np.arctan2(self.conditions['atmospheric']['wind_20m_u']['data'], self.conditions['atmospheric']['wind_20m_v']['data'])/np.pi*180 # 
+        if self.conditions['atmospheric']['wind_20m_angle']['data'] < 0:
+            self.conditions['atmospheric']['wind_20m_angle']['data'] += 360
+        self.conditions['atmospheric']['precip_rate']['data'] = float(atmos_data_interp.Precipitation_rate_surface)
+        self.conditions['atmospheric']['precip_rain_cat']['data'] = float(atmos_data_interp.Categorical_Rain_surface)
+        self.conditions['atmospheric']['precip_snow_cat']['data'] = float(atmos_data_interp.Categorical_Snow_surface)
+        self.conditions['atmospheric']['precip_freezing_rain_cat']['data'] = float(atmos_data_interp.Categorical_Freezing_Rain_surface)
+        self.conditions['atmospheric']['precip_ice_pellets_cat']['data'] = float(atmos_data_interp.Categorical_Ice_Pellets_surface)
+        self.conditions['atmospheric']['precip_percent_frozen']['data'] = float(atmos_data_interp.Per_cent_frozen_precipitation_surface)
+        self.conditions['atmospheric']['tornadoes']['data'] = float(atmos_data_interp["Storm_relative_helicity_height_above_ground_layer"] > 250)
         
-        self.conditions['wind_10m_u']['data'] = float(ad_interp["u-component_of_wind_height_above_ground"].sel(height_above_ground4 = 10))
-        self.conditions['wind_10m_u']['description'] = "u-component of wind at 10 meters height"
-        self.conditions['wind_10m_u']['units'] = ad_interp["u-component_of_wind_height_above_ground"].units
-        
-        self.conditions['wind_10m_v']['data'] = float(ad_interp["v-component_of_wind_height_above_ground"].sel(height_above_ground4 = 10))
-        self.conditions['wind_10m_v']['description'] = "v-component of wind at 10 meters height"
-        self.conditions['wind_10m_v']['units'] = ad_interp["v-component_of_wind_height_above_ground"].units
-        
-        self.conditions['wind_10m_speed']['data'] = np.sqrt(self.conditions['wind_10m_u']['data']**2 + self.conditions['wind_10m_v']['data']**2)
-        self.conditions['wind_10m_speed']['description'] = "Wind speed at 10 meters height."
-        self.conditions['wind_10m_speed']['units'] = "m/s"
-        
-        self.conditions['wind_10m_angle']['data'] = np.arctan2(self.conditions['wind_10m_u']['data'], self.conditions['wind_10m_v']['data'])/np.pi*180 # 
-        self.conditions['wind_10m_angle']['description'] = "Wind angle at 10 meters heights."
-        self.conditions['wind_10m_angle']['units'] = "Degrees with respect to the north. Negative values are on the westward side of the compass."
-        
-        self.conditions['wind_20m_u']['data'] = float(ad_interp["u-component_of_wind_height_above_ground"].sel(height_above_ground4 = 20))
-        self.conditions['wind_20m_u']['description'] = "u-component of wind at 20 meters height"
-        self.conditions['wind_20m_u']['units'] = ad_interp["u-component_of_wind_height_above_ground"].units
-        
-        self.conditions['wind_20m_v']['data'] = float(ad_interp["v-component_of_wind_height_above_ground"].sel(height_above_ground4 = 20))
-        self.conditions['wind_20m_v']['description'] = "v-component of wind at 20 meters height"
-        self.conditions['wind_20m_v']['units'] = ad_interp["v-component_of_wind_height_above_ground"].units
-        
-        self.conditions['wind_20m_speed']['data'] = np.sqrt(self.conditions['wind_20m_u']['data']**2 + self.conditions['wind_20m_v']['data']**2)
-        self.conditions['wind_20m_speed']['description'] = "Wind speed at 20 meters heigh.t"
-        self.conditions['wind_20m_speed']['units'] = "m/s"
-        
-        self.conditions['wind_20m_angle']['data'] = np.arctan2(self.conditions['wind_20m_u']['data'], self.conditions['wind_20m_v']['data'])/np.pi*180 # 
-        self.conditions['wind_20m_angle']['description'] = "Wind angle at 20 meters height."
-        self.conditions['wind_20m_angle']['units'] = "Degrees with respect to the north. Negative values are on the westward side of the compass."
-
-        self.conditions['precip_rate']['data'] = float(ad_interp.Precipitation_rate_surface)
-        self.conditions['precip_rate']['description'] = ad_interp["Precipitation_rate_surface"].long_name
-        self.conditions['precip_rate']['units'] = ad_interp["Precipitation_rate_surface"].units
-        
-        self.conditions['precip_rain_cat']['data'] = float(ad_interp.Categorical_Rain_surface)
-        self.conditions['precip_rain_cat']['description'] = ad_interp["Categorical_Rain_surface"].long_name
-        self.conditions['precip_rain_cat']['units'] = "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
-        
-        self.conditions['precip_snow_cat']['data'] = float(ad_interp.Categorical_Snow_surface)
-        self.conditions['precip_snow_cat']['description'] = ad_interp["Categorical_Snow_surface"].long_name
-        self.conditions['precip_snow_cat']['units'] = "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
-        
-        self.conditions['precip_freezing_rain_cat']['data'] = float(ad_interp.Categorical_Freezing_Rain_surface)
-        self.conditions['precip_freezing_rain_cat']['description'] = ad_interp["Categorical_Freezing_Rain_surface"].long_name
-        self.conditions['precip_freezing_rain_cat']['units'] = "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
-        
-        self.conditions['precip_ice_pellets_cat']['data'] = float(ad_interp.Categorical_Ice_Pellets_surface)
-        self.conditions['precip_ice_pellets_cat']['description'] = ad_interp["Categorical_Ice_Pellets_surface"].long_name
-        self.conditions['precip_ice_pellets_cat']['units'] = "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
-        
-        self.conditions['precip_percent_frozen']['data'] = float(ad_interp.Per_cent_frozen_precipitation_surface)
-        self.conditions['precip_percent_frozen']['description'] = ad_interp["Per_cent_frozen_precipitation_surface"].long_name
-        self.conditions['precip_percent_frozen']['units'] = ad_interp["Per_cent_frozen_precipitation_surface"].units
-        
-        self.conditions['tornadoes']['data'] = float(ad_interp["Storm_relative_helicity_height_above_ground_layer"] > 250)
-        self.conditions['tornadoes']['description'] = ad_interp["Storm_relative_helicity_height_above_ground_layer"].long_name + \
-                                                                "\n H" + \
-                                                                "\n See https://www.spc.noaa.gov/exper/mesoanalysis/help/help_srh1.html"
-        self.conditions['tornadoes']['units'] = "1 if higher than 250 J/kg (tornados may develop). 0 if lower."
-
-        self.conditions['atmospheric_bulletin_date'] = str(dataset.reftime.data[0])[:16]
+        if not self.ignore_cache_validity:
+            self.conditions['atmospheric']['info'] = {'bulletin_date': str(dataset.reftime.data[0])[:16]}
         
 
     def load_bathy_data(self, dataset):
@@ -220,13 +148,9 @@ class point_conditions:
 
         batd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method='linear').compute()
         
-        self.conditions['bathy'] = {"data" : float(batd_interp.deptho),
-                                    "description" : "Seafloor depth",
-                                    "units" : "m"}
-        self.depth = self.conditions['bathy']['data']
-        self.conditions['mask'] = {"data" : int(batd_interp.mask),
-                                    "description" : "Land-sea mask",
-                                    "units" : "1 = sea ; 0 = land"}
+        self.conditions['general']['bathy'] = {"data" : float(batd_interp.deptho)}
+        self.depth = self.conditions['general']['bathy']['data']
+        self.conditions['general']['mask'] = {"data" : int(batd_interp.mask)}
         
         
     def load_wave_data(self, dataset):
@@ -237,66 +161,45 @@ class point_conditions:
             CMEMS wave dataset with conditions that we want to use.
         """
         assert type(dataset) == xr.core.dataset.Dataset
-        if not 'bathy' in self.conditions:
+        if not 'bathy' in self.conditions['general']:
             logger.warning("Bathymetric data is necessary for determining wave parameters. Wavelength cannot be computed.")
 
         if dataset.time.shape == ():
-            waved_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear").compute()
+            wave_data_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear").compute()
         elif dataset.time.shape == (2,):
             if np.datetime64(self.timestamp) > dataset.time.data[0] and np.datetime64(self.timestamp) < dataset.time.data[-1]:
-                waved_interp = dataset.interp(longitude=self.lon, latitude=self.lat, time=self.timestamp, method="linear").compute()
+                wave_data_interp = dataset.interp(longitude=self.lon, latitude=self.lat, time=self.timestamp, method="linear").compute()
             else:
                 raise RuntimeError("Timestamp does not fall within wave data period.")
         logger.info('Loading wave data.')
 
-        for variable in list(waved_interp.variables):
+        for variable in list(wave_data_interp.variables):
             if variable not in ['longitude', 'latitude', 'time']:
                 logger.info(f"Downloading variable {variable}")
-                self.conditions[variable] = {"data" : float(waved_interp[variable]),
-                                             "description" : waved_interp[variable].long_name,
-                                             "units" : waved_interp[variable].units}
+                self.conditions['waves'][variable] = {"data" : float(wave_data_interp[variable])}
         
-        peak_wavelength, peak_velocity = physics.wavelength_velocity(self.conditions['VTPK']['data'], self.depth)
-        self.conditions['VLPK'] = {"data" : peak_wavelength,
-                                 "description" : "Wavelength of wave at spectral peak",
-                                 "units" : "m"}
-        self.conditions['VSPK'] = {"data" : peak_velocity,
-                                 "description" : "Speed of wave at spectral peak",
-                                 "units" : "m/s"}
+        peak_wavelength, peak_velocity = physics.wavelength_velocity(self.conditions['waves']['VTPK']['data'], self.depth)
+        self.conditions['waves']['VLPK'] = {"data" : peak_wavelength}
+        self.conditions['waves']['VSPK'] = {"data" : peak_velocity}
         
-        mean_wavelength, mean_velocity = physics.wavelength_velocity(self.conditions['VTM10']['data'], self.depth)
-        self.conditions['VLM0110'] = {"data" : mean_wavelength,
-                                 "description" : "mean wavelength from variance spectral density",
-                                 "units" : "m"}
-        self.conditions['VSM0110'] = {"data" : mean_velocity,
-                                 "description" : "mean speed from variance spectral density",
-                                 "units" : "m/s"}
+        mean_wavelength, mean_velocity = physics.wavelength_velocity(self.conditions['waves']['VTM10']['data'], self.depth)
+        self.conditions['waves']['VLM0110'] = {"data" : mean_wavelength}
+        self.conditions['waves']['VSM0110'] = {"data" : mean_velocity}
         
-        SW1_wavelength, SW1_velocity = physics.wavelength_velocity(self.conditions['VTM01_SW1']['data'], self.depth)
-        self.conditions['VLM01_SW1'] = {"data" : SW1_wavelength,
-                                 "description" : "Spectral moments (0,1) primary swell wave wavelength",
-                                 "units" : "m"}
-        self.conditions['VSM01_SW1'] = {"data" : SW1_velocity,
-                                 "description" : "Spectral moments (0,1) primary swell wave speed",
-                                 "units" : "m/s"}
+        SW1_wavelength, SW1_velocity = physics.wavelength_velocity(self.conditions['waves']['VTM01_SW1']['data'], self.depth)
+        self.conditions['waves']['VLM01_SW1'] = {"data" : SW1_wavelength}
+        self.conditions['waves']['VSM01_SW1'] = {"data" : SW1_velocity}
         
-        SW2_wavelength, SW2_velocity = physics.wavelength_velocity(self.conditions['VTM01_SW2']['data'], self.depth)
-        self.conditions['VLM01_SW2'] = {"data" : SW1_wavelength,
-                                 "description" : "Spectral moments (0,1) secondary swell wave wavelength",
-                                 "units" : "m"}
-        self.conditions['VSM01_SW2'] = {"data" : SW1_velocity,
-                                 "description" : "Spectral moments (0,1) secondary swell waved speed",
-                                 "units" : "m/s"}
+        SW2_wavelength, SW2_velocity = physics.wavelength_velocity(self.conditions['waves']['VTM01_SW2']['data'], self.depth)
+        self.conditions['waves']['VLM01_SW2'] = {"data" : SW2_wavelength}
+        self.conditions['waves']['VSM01_SW2'] = {"data" : SW2_velocity}
         
-        WW_wavelength, WW_velocity = physics.wavelength_velocity(self.conditions['VTM01_WW']['data'], self.depth)
-        self.conditions['VLM01_WW'] = {"data" : WW_wavelength,
-                                 "description" : "Spectral moments (0,1) wind wave wavelength",
-                                 "units" : "m"}
-        self.conditions['VSM01_WW'] = {"data" : WW_velocity,
-                                 "description" : "Spectral moments (0,1) wind wave spee",
-                                 "units" : "m/s"}
+        WW_wavelength, WW_velocity = physics.wavelength_velocity(self.conditions['waves']['VTM01_WW']['data'], self.depth)
+        self.conditions['waves']['VLM01_WW'] = {"data" : WW_wavelength}
+        self.conditions['waves']['VSM01_WW'] = {"data" : WW_velocity}
 
-        self.conditions['wave_bulletin_date'] = dataset.attrs['date_created']
+        if not self.ignore_cache_validity:
+            self.conditions['waves']['info'] = {'bulletin_date': dataset.attrs['date_created']}
 
 
     def load_phys_data(self, dataset):
@@ -310,20 +213,20 @@ class point_conditions:
         logger.info('Loading physics data.')
 
         if dataset.time.shape == ():
-            physd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear").compute()
+            phys_data_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear").compute()
         elif dataset.time.shape == (2,):
             if np.datetime64(self.timestamp) > dataset.time.data[0] and np.datetime64(self.timestamp) < dataset.time.data[-1]:
-                physd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, time= self.timestamp, method="linear").compute()
+                phys_data_interp = dataset.interp(longitude=self.lon, latitude=self.lat, time= self.timestamp, method="linear").compute()
             else:
                 raise RuntimeError("Timestamp does not fall within physics data period.")
 
-        for variable in list(physd_interp.variables):
+        for variable in list(phys_data_interp.variables):
             if variable in ['sithick', 'siconc', 'thetao', 'uo', 'vo', 'vsi', 'usi']:
                 logger.info(f"Downloading variable {variable}")
-                self.conditions[variable] = {"data" : float(physd_interp[variable]),
-                                             "description" : physd_interp[variable].long_name,
-                                             "units" : physd_interp[variable].units}
-        self.conditions['phys_bulletin_date'] = dataset.attrs['bulletin_date']
+                self.conditions['physics'][variable] = {"data" : float(phys_data_interp[variable])}
+
+        if not self.ignore_cache_validity:
+            self.conditions['physics']['info'] = {'bulletin_date': dataset.attrs['bulletin_date']}
         
 
     def load_bgc_data(self, dataset):
@@ -337,20 +240,33 @@ class point_conditions:
         logger.info('Loading biogeochemistry data.')
         
         if dataset.time.shape == ():
-            bgcd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear").compute()
+            bgc_data_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method="linear").compute()
         elif dataset.time.shape == (2,):
             if np.datetime64(self.timestamp) > dataset.time.data[0] and np.datetime64(self.timestamp) < dataset.time.data[-1]:
-                bgcd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, time= self.timestamp, method="linear").compute()
+                bgc_data_interp = dataset.interp(longitude=self.lon, latitude=self.lat, time= self.timestamp, method="linear").compute()
             else:
                 raise RuntimeError("Timestamp does not fall within BGC data period.")
 
-        for variable in list(bgcd_interp.variables):
-            if variable in ['nppv', 'chl']:
+        for variable in list(bgc_data_interp.variables):
+            if variable in ['chl']:
                 logger.info(f"Downloading variable {variable}")
-                self.conditions[variable] = {"data" : float(bgcd_interp[variable]),
-                                             "description" : bgcd_interp[variable].long_name,
-                                             "units" : bgcd_interp[variable].units}
-        self.conditions['BGC_bulletin_date'] = dataset.attrs['bulletin_date']
+                self.conditions['biogeochemistry'][variable] = {"data" : float(bgc_data_interp[variable])}
+        
+        if not self.ignore_cache_validity:
+            self.conditions['biogeochemistry']['info'] = {'bulletin_date': dataset.attrs['bulletin_date']}
+
+
+    def fill_metadata(self, path="variable_descriptions.json"):
+        with open(path, 'r') as readFile:
+            variable_descriptions = json.load(readFile)
+
+        for domain in self.conditions.keys():
+            for variable in self.conditions[domain]:
+                if variable in variable_descriptions[domain].keys():
+                    for metadata_name, metadata in variable_descriptions[domain][variable].items():
+                        self.conditions[domain][variable][metadata_name] = metadata
+                else:
+                    logger.info(f"{variable}, part of domain {domain}, exists in `point conditions`, but metadata cannot be found.")
 
 
     def json_dump(self, path=None):
@@ -368,41 +284,20 @@ class point_conditions:
             json.dump(self.conditions, dumpFile, indent = 4)
 
     
-    def load_bathy_data(self, dataset):
-        """
-        Parameters
-        ----------
-        atmospheric_data : xr.Dataset
-            Bathymetry dataset that we want to use.
-        """
-        assert type(dataset) == xr.core.dataset.Dataset
-        logger.info('Loading bathymetry data.')
-
-        batd_interp = dataset.interp(longitude=self.lon, latitude=self.lat, method='linear').compute()
-        
-        self.conditions['bathy'] = {"data" : float(batd_interp.deptho),
-                                    "description" : "Seafloor depth",
-                                    "units" : "m"}
-        self.depth = self.conditions['bathy']['data']
-        self.conditions['mask'] = {"data" : int(batd_interp.mask),
-                                    "description" : "Land-sea mask",
-                                    "units" : "1 = sea ; 0 = land"}
-        
-        
-    
-
-
 if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser(description='Loading of environmental data for Bound to the Miraculous.')
     
     parser.add_argument('lon', metavar='longitude', type=float, help='Longitude, ranging from -180 to 180.')
     parser.add_argument('lat', metavar='latitude', type=float, help='Latitude, ranging from -90 to 90.')
+    parser.add_argument('--filename', metavar='Filename', help="filename for JSON output", type=str, default=None)
     parser.add_argument('--timestamp', metavar='timestamp string YYYY-MM-DD-HH-MM', type=str, default=None, 
                         help="Timestamp for which to load the data. Format: YYYY-MM-DD-HH-MM")
     parser.add_argument('--cred', metavar='CMEMS_credentials file', type=str, default=None,
                         help='Copernicus Marine Environment Monitoring Services credential file. This should be a JSON file with `username` and `password`.')
-    parser.add_argument('--download_atlantic', type=bool, default=False, help='Download the whole of the North Atlantic domain.')
+    parser.add_argument('--download_atlantic', action='store_true', help='Download the whole of the North Atlantic domain.')
+    parser.add_argument('--force_download', action='store_true', help="Force a fresh download from server, ignoring cached data")
+    parser.add_argument('--ignore_cache_validity', action='store_true', help="Use cached data, no matter if the requested time is not available in it.")
     
     args = parser.parse_args()
     
@@ -413,9 +308,9 @@ if __name__ == "__main__":
     # Load credentials
     logger.info('Loading credentials.')
     if args.cred:
-        cmems_credentials = load_credentials(args.cred)
+        cmems_credentials = downloader.load_credentials(args.cred)
     else:
-        cmems_credentials = load_credentials()
+        cmems_credentials = downloader.load_credentials()
     
     # Parse time
     if not args.timestamp:
@@ -429,11 +324,12 @@ if __name__ == "__main__":
     ts_minutes = int(ts_str[14:])
 
     timestamp = datetime.datetime(ts_year, ts_month, ts_day, ts_hour, ts_minutes)
+    timestamp64 = np.datetime64(f"{ts_year}-{ts_month:02d}-{ts_day}T{ts_hour:02d}:{ts_minutes:02d}")
 
     logger.info('Loading bathymetry.')
     bathy_data = tools.load_bathymetry(cmems_credentials)
     
-    # Downloading data
+    # Setting the extent
     logger.info('Loading datasets.')
     if args.download_atlantic:
         lon = (-90, 23)
@@ -443,24 +339,111 @@ if __name__ == "__main__":
         lon = args.lon
         lat = args.lat
 
-    atmospheric_data = downloader.load_gfs_online_multistep(lon=lon, lat=lat, time=timestamp)
-    wave_data = downloader.load_cmems_wave_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
-    phys_data = downloader.load_cmems_phys_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
-    bgc_data = downloader.load_cmems_bgc_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+    # Loading in the data from cache or download.
+    download_atmospheric = True
+    if os.path.exists("cache/cache_atmospheric_data.nc") and not args.force_download:
+        atmospheric_data = xr.open_dataset("cache/cache_atmospheric_data.nc")
+        if (timestamp64 > atmospheric_data.time[0] and timestamp64 < atmospheric_data.time[1]) or args.ignore_cache_validity:
+            download_atmospheric = False
+            if type(lon) in [float, int]:
+                if lon < atmospheric_data.lon.min() or lon > atmospheric_data.lon.max() or lat < atmospheric_data.lat.min() or lat > atmospheric_data.lat.max():
+                    download_atmospheric = True
+                    atmospheric_data.close()
+            if args.ignore_cache_validity and not download_atmospheric:
+                atmospheric_data = atmospheric_data.isel(time=0)
+        else:
+            atmospheric_data.close()
+    if download_atmospheric:
+        logger.info("Downloading atmospheric data")
+        atmospheric_data = downloader.load_gfs_online_multistep(lon=lon, lat=lat, time=timestamp)
+        atmospheric_data.to_netcdf("cache/cache_atmospheric_data.nc")
+    else:
+        logger.info("Loading atmospheric data from cache")
+
+
+    download_wave = True
+    if os.path.exists("cache/cache_wave_data.nc") and not args.force_download:
+        wave_data = xr.open_dataset("cache/cache_wave_data.nc")
+        if (timestamp64 > wave_data.time[0] and timestamp64 < wave_data.time[1]) or args.ignore_cache_validity:
+            download_wave = False
+            if type(lon) in [float, int]:
+                if lon < wave_data.longitude.min() or lon > wave_data.longitude.max() or lat < wave_data.latitute.min() or lat > wave_data.latitute.max():
+                    download_wave = True
+                    wave_data.close()
+            if args.ignore_cache_validity and not download_wave:
+                wave_data = wave_data.isel(time=0)
+        else:
+            wave_data.close()
+    if download_wave:
+        logger.info("Downloading wave data")
+        wave_data = downloader.load_cmems_wave_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+        wave_data.to_netcdf("cache/cache_wave_data.nc")
+    else:
+        logger.info("Loading wave data from cache")
+
+
+    download_physics = True
+    if os.path.exists("cache/cache_physics_data.nc") and not args.force_download:
+        phys_data = xr.open_dataset("cache/cache_physics_data.nc")
+        if (timestamp64 > phys_data.time[0] and timestamp64 < phys_data.time[1]) or args.ignore_cache_validity:
+            download_physics = False
+            if type(lon) in [float, int]:
+                if lon < phys_data.longitude.min() or lon > phys_data.longitude.max() or lat < phys_data.latitute.min() or lat > phys_data.latitute.max():
+                    download_physics = True
+                    phys_data.close()
+            if args.ignore_cache_validity and not download_physics:
+                phys_data = phys_data.isel(time=0)
+        else:
+            phys_data.close()
+    if download_physics:
+        logger.info("Downloading Physics data")
+        phys_data = downloader.load_cmems_phys_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+        phys_data.to_netcdf("cache/cache_physics_data.nc")
+    else:
+        logger.info("Loading physics data from cache")
+
+    
+    download_bgc = True
+    if os.path.exists("cache/cache_bgc_data.nc") and not args.force_download:
+        bgc_data = xr.open_dataset("cache/cache_bgc_data.nc")
+        if (timestamp64 > bgc_data.time[0] and timestamp64 < bgc_data.time[1]) or args.ignore_cache_validity:
+            download_bgc = False
+            if type(lon) in [float, int]:
+                if lon < bgc_data.longitude.min() or lon > bgc_data.longitude.max() or lat < bgc_data.latitute.min() or lat > bgc_data.latitute.max():
+                    download_bgc = True
+                    bgc_data.close()
+            if args.ignore_cache_validity and not download_bgc:
+                bgc_data = bgc_data.isel(time=0)
+        else:
+            bgc_data.close()
+    if download_bgc:
+        logger.info("Downloading BGC data")
+        bgc_data = downloader.load_cmems_bgc_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+        bgc_data.to_netcdf("cache/cache_bgc_data.nc")
+    else:
+        logger.info("Loading bgc data from cache")
 
     # Extract conditions
     logger.info(f"Extracting conditions for lon: {args.lon:.3f}, lat: {args.lat:.3f}")
-    conditions = point_conditions(args.lon, args.lat, timestamp)
+    conditions = point_conditions(args.lon, args.lat, timestamp, ignore_cache_validity=args.ignore_cache_validity)
     conditions.load_atmospheric_data(atmospheric_data)
     conditions.load_bathy_data(bathy_data)
     conditions.load_wave_data(wave_data)
     conditions.load_phys_data(phys_data)
     conditions.load_bgc_data(bgc_data)
 
+    conditions.fill_metadata()
+
     # Dump output
     tools.check_dir("output")
-    conditions.json_dump(f"output/conditions_lon_{args.lon:.3f}_lat_{args.lat:.3f}_time_{ts_str}.json")
+    if args.filename:
+        fname = args.filename
+        # Check if there is a path in the filename. If not, make sure that we write to the output directory.
+        if fname[0] not in [".", "/"]:
+            fname = "output/" + fname
+    else:
+        fname = f"output/conditions_lon_{args.lon:.3f}_lat_{args.lat:.3f}_time_{ts_str}.json"
+    conditions.json_dump(fname)
 
 
     print("Finished.")
-        

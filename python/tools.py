@@ -47,7 +47,7 @@ def load_bathymetry(credentials = None):
         dictionary with CMEMS credentials.
     """
 
-    bathy_path = "../cache/bathymetry_mask.nc"
+    bathy_path = "cache/bathymetry_mask.nc"
     check_dir("cache")
     if not os.path.isfile(bathy_path):
         if not credentials:

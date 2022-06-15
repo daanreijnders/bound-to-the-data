@@ -20,20 +20,52 @@ def FSI(T2m, Td2m, T850, W850):
     Parameters
     ----------
     T2m : int, float
-        2 meter temperature
+        2 meter temperature [degrees C]
     
     Td2m : int, float
-        2 meter dewpoint temperature
+        2 meter dewpoint temperature [degrees C]
     
     T850 : int float
-        temperature at 850 hPa
+        temperature at 850 hPa [degrees C]
         
     W850 : int, float
-        wind speed at 850 hPa
+        wind speed at 850 hPa [m/s]
     """
     FSI = 2 * (T2m - Td2m) + 2 * (T2m - T850) + W850
     
     return FSI
+
+def fogginess(fsi=None, T2m=None, Td2m=None, T850=None, W850=None):
+    """
+    Uses `FSI` to return a 'foginess' between 0 (no fog) and 1 (foggiest).
+
+    Parameters
+    ----------
+    fsi : int, float
+        FSI value
+
+    T2m : int, float
+        2 meter temperature [degrees C]
+    
+    Td2m : int, float
+        2 meter dewpoint temperature [degrees C]
+    
+    T850 : int float
+        temperature at 850 hPa [degrees C]
+        
+    W850 : int, float
+        wind speed at 850 hPa [m/s]
+    """
+    if not fsi:
+        fsi = FSI(T2m, Td2m, T850, W850)
+
+    fogginess_val = (60 - fsi)/60
+    if fogginess_val < 0: 
+        fogginess_val = 0
+    elif fogginess_val > 1:
+        fogginess_val = 1
+
+    return fogginess_val
 
 
 def dispersion_relation(kappa, H):
@@ -43,15 +75,15 @@ def dispersion_relation(kappa, H):
     Parameters
     ----------
     kappa : float
-        Wavenumber (radial)
+        Wavenumber (radial) [rad/m]
     
     H : float
-        Locat water depth in meters
+        Local water depth [meters]
     
     Returns
     -------
     float
-        frequency
+        frequency [rad/s]
     """
     
     g = 9.81 # m/s^2 gravitational acceleration
@@ -71,10 +103,10 @@ def wavelength_velocity(period, water_depth):
     Parameters
     ----------
     period : float
-        Wave period in seconds
+        Wave period [seconds]
     
     water_depth : float
-        Local water depth in meters
+        Local water depth [meters]
         
     Returns
     -------

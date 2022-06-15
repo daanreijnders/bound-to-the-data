@@ -26,9 +26,30 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger("Bound")
 
+"""
+------------------------
+     CREDENTIALS
+------------------------
+"""
+def load_credentials(path = "credentials.json"):
+    """
+    Load CMEMS credentials JSON file. Must contain keys `username` and `password`.
+    """
+    with open(path, 'r') as cred_file:
+        credentials = json.load(cred_file)
+    return credentials
+
+
+"""
+------------------------
+     Downloads
+------------------------
+"""
+
 # Define products
 CMEMS_id_wave = 'global-analysis-forecast-wav-001-027'
-CMEMS_id_phys = 'global-analysis-forecast-phy-001-024'
+# CMEMS_id_phys = 'global-analysis-forecast-phy-001-024' # daily
+CMEMS_id_phys = 'global-analysis-forecast-phy-001-024-hourly-t-u-v-ssh' # hourly, does not contain sea ice.
 CMEMS_id_bgc = 'global-analysis-forecast-bio-001-028-daily'
      
         
@@ -245,10 +266,10 @@ def download_bathymetry(credentials):
     
 
     bathy_server_file = "GLO-MFC_001_030_mask_bathy.nc"
-    trimmed_filename = "../cache/bathymetry_mask.nc"
+    trimmed_filename = "cache/bathymetry_mask.nc"
     logger.info("Requesting bathymetry file from CMEMS.")
     
-    tools.check_dir("../cache")
+    tools.check_dir("cache")
     
     retrieve_copernicus_ftp(path = "Core/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083-static",
                             file = bathy_server_file,
@@ -363,16 +384,100 @@ def load_cmems_product_online(prod_id,
     return dataset
 
 
-def load_cmems_wave_data_online(credentials, lon, lat, time = datetime.datetime.utcnow(), margin = 3, timeMarginHours = 3):
+def load_cmems_wave_data_online(credentials, lon, lat, time = datetime.datetime.utcnow(), spatialMargin = 3, timeMarginHours = 1.5):
     logger.info("Retrieving CMEMS wave forecast data")
-    return load_cmems_product_online(CMEMS_id_wave, credentials=credentials, lon=lon, lat=lat, time=time, margin=margin, timeMarginHours=timeMarginHours)
+    return load_cmems_product_online(CMEMS_id_wave, credentials=credentials, lon=lon, lat=lat, time=time, spatialMargin=spatialMargin, timeMarginHours=timeMarginHours)
 
 
-def load_cmems_phys_data_online(credentials, lon, lat, time = datetime.datetime.utcnow(), margin = 3, timeMarginHours = 12):
+def load_cmems_phys_data_online(credentials, lon, lat, time = datetime.datetime.utcnow(), spatialMargin = 3, timeMarginHours = 0.5):
     logger.info("Retrieving CMEMS physics forecast and analysis data")
-    return load_cmems_product_online(CMEMS_id_phys, credentials=credentials, lon=lon, lat=lat, time=time, margin=margin, timeMarginHours=timeMarginHours).isel(depth = 0)
+    return load_cmems_product_online(CMEMS_id_phys, credentials=credentials, lon=lon, lat=lat, time=time, spatialMargin=spatialMargin, timeMarginHours=timeMarginHours).isel(depth = 0)
 
 
-def load_cmems_bgc_data_online(credentials, lon, lat, time = datetime.datetime.utcnow(), margin = 3,timeMarginHours = 12):
+def load_cmems_bgc_data_online(credentials, lon, lat, time = datetime.datetime.utcnow(), spatialMargin = 3,timeMarginHours = 12):
     logger.info("Retrieving CMEMS biogeochemistry forecast and analysis data")
-    return load_cmems_product_online(CMEMS_id_bgc, credentials=credentials, lon=lon, lat=lat, time=time, margin=margin, timeMarginHours=timeMarginHours).isel(depth = 0)
+    return load_cmems_product_online(CMEMS_id_bgc, credentials=credentials, lon=lon, lat=lat, time=time, spatialMargin=spatialMargin, timeMarginHours=timeMarginHours).isel(depth = 0)
+
+
+if __name__ == "__main__":
+    """
+    This script does not need to be used. Preferably use the main script in conjunction with the `--download_atlantic` flag
+    """
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Downloading environmental data for Bound to the Miraculous. This data can be used as a fallback steady-state snapshot. Loads data from the whole North Atlantic by default')
+    parser.add_argument('-atmosphere', action='store_true', help="Download atmospheric data.")
+    parser.add_argument('-wave', action='store_true', help="Download wave data.")
+    parser.add_argument('-physics', action='store_true', help="Download ocean physics data.")
+    parser.add_argument('-bgc', action='store_true', help="Download biogeochemical data.")
+    parser.add_argument('-bathymetry', action='store_true', help="Download atmospheric data.")
+    parser.add_argument('--minLon', default=None, type=float)
+    parser.add_argument('--maxLon', default=None, type=float)
+    parser.add_argument('--minLat', default=None, type=float)
+    parser.add_argument('--maxLat', default=None, type=float)
+    parser.add_argument('--cred', metavar='CMEMS_credentials file', type=str, default=None,
+                        help='Copernicus Marine Environment Monitoring Services credential file. This should be a JSON file with `username` and `password`.')
+    parser.add_argument('--timestamp', metavar='timestamp string YYYY-MM-DD-HH-MM', type=str, default=None, 
+                        help="Timestamp for which to load the data. Format: YYYY-MM-DD-HH-MM")
+    
+    args = parser.parse_args()
+
+    if len(sys.argv) < 2:
+        parser.print_usage()
+        sys.exit(1)
+
+    # Load credentials
+    logger.info('Loading credentials.')
+    if args.cred:
+        cmems_credentials = load_credentials(args.cred)
+    else:
+        cmems_credentials = load_credentials()
+
+    tools.check_dir("../cache")
+
+    # Parse time
+    if not args.timestamp:
+        ts_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+    else:
+        ts_str = args.timestamp
+    ts_year = int(ts_str[:4])
+    ts_month = int(ts_str[5:7])
+    ts_day = int(ts_str[8:10])
+    ts_hour = int(ts_str[11:13])
+    ts_minutes = int(ts_str[14:])
+
+    timestamp = datetime.datetime(ts_year, ts_month, ts_day, ts_hour, ts_minutes)
+
+    if args.minLon and args.maxLon and args.minLat and args.maxLat:
+        lon = (args.minLon, args.maxLon)
+        lat = (args.minLat, args.maxLat)
+    else:
+        logger.info("Not all latitude/longitude bounds were explicitly specified. Downloading data for the whole North Atlantic.")
+        lon = (-90, 23)
+        lat = (0, 80)
+
+
+    if args.bathymetry:
+        bathy_data = tools.load_bathymetry(cmems_credentials)
+        logger.info("Downloaded bathymetry")
+
+    if args.atmosphere:
+        atmospheric_data = load_gfs_online_multistep(lon=lon, lat=lat, time=timestamp)
+        atmospheric_data.to_netcdf("cache/cached_atmospheric_data.nc")
+        logger.info("Downloaded atmospheric data")
+    
+    if args.wave:
+        wave_data = load_cmems_wave_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+        wave_data.to_netcdf("cache/cached_wave_data.nc") 
+        logger.info("Downloaded wave data")
+
+    if args.physics:
+        physics_data = load_cmems_phys_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+        physics_data.to_netcdf("cache/cached_physics_data.nc")
+        logger.info("Downloaded physics data")
+
+    if args.bgc:
+        bgc_data = load_cmems_bgc_data_online(cmems_credentials, lon=lon, lat=lat, time=timestamp)
+        bgc_data.to_netcdf("cache/cached_bgc_data.nc")
+        logger.info("Downloaded biogeochemistry data")
+
+    
