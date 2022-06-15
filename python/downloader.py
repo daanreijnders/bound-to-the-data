@@ -32,7 +32,7 @@ CMEMS_id_phys = 'global-analysis-forecast-phy-001-024'
 CMEMS_id_bgc = 'global-analysis-forecast-bio-001-028-daily'
      
         
-def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = True, margin = 3):
+def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = True, spatialMargin = 3):
     """
     Load best available GFS model forecast (atmospheric).
     
@@ -50,8 +50,8 @@ def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = Tru
     dump_vars : bool
         Write a `GFS_vars.json` file. 
         
-    margin : int or float
-        Margin of data to download around.
+    spatialMargin : int or float
+        Margin (in degrees) of data to download around.
         
     Returns
     -------
@@ -74,8 +74,8 @@ def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = Tru
     
     # Parse bounds input
     if (type(lon) == float or type(lon) == int) and (type(lat) == float or type(lon) == int):
-        min_lon, max_lon = lon - margin, lon + margin
-        min_lat, max_lat = lat - margin, lat + margin
+        min_lon, max_lon = lon - spatialMargin, lon + spatialMargin
+        min_lat, max_lat = lat - spatialMargin, lat + spatialMargin
     elif len(lon) == 2 and len(lat) == 2:
         min_lon, max_lon = lon
         min_lat, max_lat = lat
@@ -172,7 +172,7 @@ def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = Tru
     return data        
 
 
-def load_gfs_online_multistep(lon, lat, time = datetime.datetime.utcnow(), timeMarginHours = 1.5, dump_vars = True, margin = 3):
+def load_gfs_online_multistep(lon, lat, time = datetime.datetime.utcnow(), timeMarginHours = 1.5, dump_vars = True, spatialMargin = 3):
     """
     Load two timesteps of best available GFS model forecast (atmospheric).
     
@@ -193,8 +193,8 @@ def load_gfs_online_multistep(lon, lat, time = datetime.datetime.utcnow(), timeM
     dump_vars : bool
         Write a `GFS_vars.json` file. 
         
-    margin : int or float
-        Margin of data to download around.
+    spatialMargin : int or float
+        Margin (in degrees) of data to download around.
         
     Returns
     -------
@@ -202,8 +202,8 @@ def load_gfs_online_multistep(lon, lat, time = datetime.datetime.utcnow(), timeM
         Dataset with necessary variables
     """
 
-    prev = load_gfs_online(lon=lon, lat=lat, time = time - datetime.timedelta(hours = timeMarginHours), dump_vars = False, margin = margin)
-    next = load_gfs_online(lon=lon, lat=lat, time = time + datetime.timedelta(hours = timeMarginHours), dump_vars = False, margin = margin)
+    prev = load_gfs_online(lon=lon, lat=lat, time = time - datetime.timedelta(hours = timeMarginHours), dump_vars = False, spatialMargin = spatialMargin)
+    next = load_gfs_online(lon=lon, lat=lat, time = time + datetime.timedelta(hours = timeMarginHours), dump_vars = False, spatialMargin = spatialMargin)
     ds = xr.merge([prev, next])
     return ds
 
@@ -304,7 +304,7 @@ def load_cmems_product_online(prod_id,
                             lon, 
                             lat, 
                             time = datetime.datetime.utcnow(), 
-                            margin = 3, 
+                            spatialMargin = 3, 
                             timeMarginHours = 12):
     """
     Load best available Copernicus wave model forecast (ocean).
@@ -323,8 +323,8 @@ def load_cmems_product_online(prod_id,
     time : datetime.datime
         Timestamp of requested forecast.
         
-    margin : int or float
-        Margin (degrees) of data to download around.
+    spatialMargin : int or float
+        Margin (in degrees) of data to download around.
 
     timeMarginHours : int or float
         Margin of hours to download the data with
@@ -341,8 +341,8 @@ def load_cmems_product_online(prod_id,
     logger.info("Parsing boundaries.")
     # Parse bounds input
     if (type(lon) == float or type(lon) == int) and (type(lat) == float or type(lon) == int):
-        min_lon, max_lon = lon - margin, lon + margin
-        min_lat, max_lat = lat - margin, lat + margin
+        min_lon, max_lon = lon - spatialMargin, lon + spatialMargin
+        min_lat, max_lat = lat - spatialMargin, lat + spatialMargin
     elif len(lon) == 2 and len(lat) == 2:
         min_lon, max_lon = lon
         min_lat, max_lat = lat
