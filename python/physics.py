@@ -79,7 +79,7 @@ def wavelength_velocity(period, water_depth):
     Returns
     -------
     (float, float)
-        (Wavelength, Phase Velocity) tuple
+        (Wavelength [m], Phase Velocity [m/s]) tuple
     """
     g = 9.81 # m/s^2 gravitational acceleration
     tau = 0.08 # N/m surface tension
@@ -90,10 +90,13 @@ def wavelength_velocity(period, water_depth):
     H = water_depth # meters
     
     # Define the function that needs to be optimized (omega - omega(kappa, H) = 0)
-    def find_kappa(x):
-        return dispersion_relation(x, H) - omega
+    def find_kappa(kappa):
+        return dispersion_relation(kappa, H) - omega
     
-    # There may be some instabilities, based on the initial wavenumber guess. Vary the initial guess.
+    # Use scipy's zero finder (`fsolve`) to find the kappa related to omega.
+    # We require positive wavenumbers, but based on the initial guess, negative
+    # solutions may be found, so vary the initial guess in case the wavenumber 
+    # is negative.
     for tries in range(1, 10):
         # Solve for kappa (wavenumber)
         wavenumber = fsolve(find_kappa, tries)[0]
