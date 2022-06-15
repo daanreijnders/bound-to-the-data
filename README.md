@@ -24,6 +24,7 @@ The `python` folder contains the code. Almost every function is described with a
 - `tools.py`: miscellaneous helper tools.
 
 A `cache` folder will be created automatically. Bathymetry data and the most recent model data (atmospheric, wave, physics, and biogeochemistry) are stored here.
+An `output` folder will be created automatically.
 
 ## CMEMS Credentials
 Data from the [Copernicus Marine Environment Monitoring Service (CMEMS)](https://marine.copernicus.eu) can only be accessed using a registered CMEMS account. You can obtain an account [here](https://resources.marine.copernicus.eu/registration-form). The login credentials (username and password) should be stored in a JSON file, which has `username` and `password` keys. An example is given in `example-credentials.json`. The script looks for a `credentials.json` by default, but a path to an alternative file can be passed using the `--cred` flag (see the previous section).
