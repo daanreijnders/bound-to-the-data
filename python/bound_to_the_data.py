@@ -367,7 +367,7 @@ if __name__ == "__main__":
         if (timestamp64 > wave_data.time[0] and timestamp64 < wave_data.time[1]) or args.ignore_cache_validity:
             download_wave = False
             if type(lon) in [float, int]:
-                if lon < wave_data.longitude.min() or lon > wave_data.longitude.max() or lat < wave_data.latitute.min() or lat > wave_data.latitute.max():
+                if lon < wave_data.longitude.min() or lon > wave_data.longitude.max() or lat < wave_data.latitude.min() or lat > wave_data.latitude.max():
                     download_wave = True
                     wave_data.close()
             if args.ignore_cache_validity and not download_wave:
@@ -388,7 +388,7 @@ if __name__ == "__main__":
         if (timestamp64 > phys_data.time[0] and timestamp64 < phys_data.time[1]) or args.ignore_cache_validity:
             download_physics = False
             if type(lon) in [float, int]:
-                if lon < phys_data.longitude.min() or lon > phys_data.longitude.max() or lat < phys_data.latitute.min() or lat > phys_data.latitute.max():
+                if lon < phys_data.longitude.min() or lon > phys_data.longitude.max() or lat < phys_data.latitude.min() or lat > phys_data.latitude.max():
                     download_physics = True
                     phys_data.close()
             if args.ignore_cache_validity and not download_physics:
@@ -409,7 +409,7 @@ if __name__ == "__main__":
         if (timestamp64 > bgc_data.time[0] and timestamp64 < bgc_data.time[1]) or args.ignore_cache_validity:
             download_bgc = False
             if type(lon) in [float, int]:
-                if lon < bgc_data.longitude.min() or lon > bgc_data.longitude.max() or lat < bgc_data.latitute.min() or lat > bgc_data.latitute.max():
+                if lon < bgc_data.longitude.min() or lon > bgc_data.longitude.max() or lat < bgc_data.latitude.min() or lat > bgc_data.latitude.max():
                     download_bgc = True
                     bgc_data.close()
             if args.ignore_cache_validity and not download_bgc:
