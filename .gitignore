@@ -1,5 +1,5 @@
 cache/
-output/
+output/*
 !output/example_output.json
 __pycache__/
 credentials.json

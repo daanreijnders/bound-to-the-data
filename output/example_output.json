@@ -1,0 +1,391 @@
+{
+    "general": {
+        "lon": {
+            "data": -30.0,
+            "description": "Longitude",
+            "minval": -180,
+            "maxval": 180,
+            "units": "degrees east"
+        },
+        "lat": {
+            "data": 25.0,
+            "description": "Latitude",
+            "minval": -90,
+            "maxval": 90,
+            "units": "degrees north"
+        },
+        "timestamp": {
+            "data": "2022-06-16 11:41:00",
+            "description": "Timestamp for which the data is requested."
+        },
+        "bathy": {
+            "data": 5841.3911209465,
+            "description": "Seafloor depth",
+            "minval": 0,
+            "maxval": 10600,
+            "units": "m"
+        },
+        "mask": {
+            "data": 1,
+            "description": "Land-sea mask",
+            "minval": 0,
+            "maxval": 1,
+            "units": "1 = sea ; 0 = land"
+        }
+    },
+    "atmospheric": {
+        "clouds_high": {
+            "data": 0.0,
+            "description": "High cloud cover @ High cloud layer",
+            "minval": 0,
+            "maxval": 100,
+            "units": "%"
+        },
+        "clouds_middle": {
+            "data": 0.0,
+            "description": "Medium cloud cover @ Middle cloud layer",
+            "minval": 0,
+            "maxval": 100,
+            "units": "%"
+        },
+        "clouds_low": {
+            "data": 39.17388744354248,
+            "description": "Low cloud cover @ Low cloud layer",
+            "minval": 0,
+            "maxval": 100,
+            "units": "%"
+        },
+        "temperature_2m": {
+            "data": 22.582261149088538,
+            "description": "Temperature @ 2 meters height",
+            "minval": -10,
+            "maxval": 80,
+            "units": "Degrees Celcius"
+        },
+        "fog_stability_index": {
+            "data": 46.36983358704497,
+            "description": "Fog Stability Index. FSI < 31 indicates a high probability of fog formation. 31 < FSI < 55 implies moderate risk of fog. FSI > 55 suggests low fog risk. See https://edepot.wur.nl/144635",
+            "units": ""
+        },
+        "wind_10m_u": {
+            "data": -7.879543720351325,
+            "description": "u-component of wind at 10 meters height",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "wind_10m_v": {
+            "data": -2.2532189448674522,
+            "description": "v-component of wind at 10 meters height",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "wind_10m_speed": {
+            "data": 8.195377041627651,
+            "description": "Wind speed at 10 meters height.",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "wind_10m_angle": {
+            "data": 254.04169243646743,
+            "description": "Wind angle at 20 meters height (angle where wind points towards)",
+            "minval": 0,
+            "maxval": 1,
+            "units": "degrees (0 is north, clockwise)"
+        },
+        "wind_20m_u": {
+            "data": -8.156857278611925,
+            "description": "u-component of wind at 20 meters height",
+            "units": "m/s"
+        },
+        "wind_20m_v": {
+            "data": -2.3038003312216864,
+            "description": "v-component of wind at 20 meters height",
+            "units": "m/s"
+        },
+        "wind_20m_speed": {
+            "data": 8.47595520456435,
+            "description": "Wind speed at 20 meters height",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "wind_20m_angle": {
+            "data": 254.22834373424485,
+            "description": "Wind angle at 20 meters height (angle where wind points towards)",
+            "minval": 0,
+            "maxval": 1,
+            "units": "degrees (0 is north, clockwise)"
+        },
+        "precip_rate": {
+            "data": 1.5239999932722033e-05,
+            "description": "Precipitation rate @ Ground or water surface",
+            "minval": 0,
+            "maxval": 0.001,
+            "units": "kg.m-2.s-1 (= mm per vierkante meter per seconde)"
+        },
+        "precip_rain_cat": {
+            "data": 1.0,
+            "description": "Categorical Rain @ Ground or water surface",
+            "minval": 0,
+            "maxval": 1,
+            "units": "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
+        },
+        "precip_snow_cat": {
+            "data": 0.0,
+            "description": "Categorical Snow @ Ground or water surface",
+            "minval": 0,
+            "maxval": 1,
+            "units": "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
+        },
+        "precip_freezing_rain_cat": {
+            "data": 0.0,
+            "description": "Categorical Freezing Rain @ Ground or water surface",
+            "minval": 0,
+            "maxval": 1,
+            "units": "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
+        },
+        "precip_ice_pellets_cat": {
+            "data": 0.0,
+            "description": "Categorical Ice Pellets @ Ground or water surface",
+            "minval": 0,
+            "maxval": 1,
+            "units": "0 = No, 1 = Yes. Intermediate values do to interpolation. See https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-222.shtml"
+        },
+        "precip_percent_frozen": {
+            "data": -7.4683295451904995e-06,
+            "description": "Per cent frozen precipitation @ Ground or water surface",
+            "minval": 0,
+            "maxval": 100,
+            "units": "%"
+        },
+        "tornadoes": {
+            "data": 0.0,
+            "description": "Tornado risk computed from storm relative helicity. If higher than 250 J/kg, tornados may develop. See https://www.spc.noaa.gov/exper/mesoanalysis/help/help_srh1.html",
+            "minval": 0,
+            "maxval": 1,
+            "units": "0: no tornado risk. 1 risk of tornadoes."
+        },
+        "fog": {
+            "data": 0.22716944021591712,
+            "description": "Fogginess (0 is clear, 1 is fully foggy), somewhat arbitrarily computed from FSI.",
+            "minval": 0,
+            "maxval": 1,
+            "units": ""
+        },
+        "info": {
+            "bulletin_date": "2022-06-16T00:00",
+            "update_frequency": "6-hourly",
+            "available_timesteps": "3-hourly",
+            "spatial_resolution": "1/12th degree = 27.75 km"
+        }
+    },
+    "waves": {
+        "VHM0": {
+            "data": 1.71999990940094,
+            "description": "Spectral significant wave height (Hm0)",
+            "minval": 0,
+            "units": "m"
+        },
+        "VMDR_WW": {
+            "data": 69.48905783759223,
+            "description": "Mean wind wave direction (angle where wave comes from)",
+            "minval": 0,
+            "maxval": 360,
+            "units": "degrees (0 is north, clockwise)"
+        },
+        "VHM0_WW": {
+            "data": 0.8878888765970866,
+            "description": "Spectral significant wind wave height",
+            "minval": 0,
+            "units": "m"
+        },
+        "VMDR_SW1": {
+            "data": 25.45022048950195,
+            "description": "Mean primary swell wave direction (angle where wave comes from)",
+            "minval": 0,
+            "maxval": 360,
+            "units": "degrees (0 is north, clockwise)"
+        },
+        "VTM01_SW1": {
+            "data": 6.975277588102553,
+            "description": "Spectral moments (0,1) primary swell wave period",
+            "minval": 0,
+            "units": "s"
+        },
+        "VMDR_SW2": {
+            "data": 169.59533962673612,
+            "description": "Mean secondary swell wave direction (angle where wave comes from)",
+            "minval": 0,
+            "maxval": 360,
+            "units": "degrees (0 is north, clockwise)"
+        },
+        "VTM01_SW2": {
+            "data": 11.331610769695706,
+            "description": "Spectral moments (0,1) secondary swell wave period",
+            "minval": 0,
+            "units": "s"
+        },
+        "VMDR": {
+            "data": 51.14328638712565,
+            "description": "Mean wave direction (angle where wave comes from)",
+            "minval": 0,
+            "maxval": 360,
+            "units": "degrees (0 is north, clockwise)"
+        },
+        "VTM10": {
+            "data": 7.401610991689894,
+            "description": "Spectral moments (-1,0) wave period (Tm-10)",
+            "minval": 0,
+            "units": "s"
+        },
+        "VHM0_SW1": {
+            "data": 1.2599999904632568,
+            "description": "Spectral significant primary swell wave height",
+            "minval": 0,
+            "units": "m"
+        },
+        "VHM0_SW2": {
+            "data": 0.5121110995610555,
+            "description": "Spectral significant secondary swell wave height",
+            "minval": 0,
+            "units": "m"
+        },
+        "VTPK": {
+            "data": 10.001055579715304,
+            "description": "Wave period at spectral peak / peak period (Tp)",
+            "minval": 0,
+            "units": "s"
+        },
+        "VSDX": {
+            "data": -0.09999999403953552,
+            "description": "Stokes drift U",
+            "units": "m s-1"
+        },
+        "VSDY": {
+            "data": -0.04105555444127983,
+            "description": "Stokes drift V",
+            "units": "m s-1"
+        },
+        "VPED": {
+            "data": 37.5,
+            "description": "Wave principal direction at spectral peak (angle where the wave is coming from)",
+            "minval": 0,
+            "maxval": 360,
+            "units": "degrees (0 is north, clockwise)"
+        },
+        "VTM02": {
+            "data": 4.9742220083872475,
+            "description": "Spectral moments (0,2) wave period (Tm02)",
+            "minval": 0,
+            "units": "s"
+        },
+        "VTM01_WW": {
+            "data": 3.5968332409858705,
+            "description": "Spectral moments (0,1) wind wave period",
+            "minval": 0,
+            "units": "s"
+        },
+        "VLPK": {
+            "data": 156.163964665304,
+            "description": "Wavelength of wave at spectral peak",
+            "minval": 0,
+            "units": "m"
+        },
+        "VSPK": {
+            "data": 15.614748205383881,
+            "description": "Speed of wave at spectral peak",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "VLM0110": {
+            "data": 85.53456867764794,
+            "description": "mean wavelength from variance spectral density",
+            "minval": 0,
+            "units": "m"
+        },
+        "VSM0110": {
+            "data": 11.556209691874008,
+            "description": "mean speed from variance spectral density",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "VLM01_SW1": {
+            "data": 75.96475711250494,
+            "description": "Spectral moments (0,1) primary swell wave wavelength",
+            "units": "m"
+        },
+        "VSM01_SW1": {
+            "data": 10.890571185593378,
+            "description": "Spectral moments (0,1) primary swell wave speed",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "VLM01_SW2": {
+            "data": 200.4806396928785,
+            "description": "Spectral moments (0,1) secondary swell wave wavelength",
+            "minval": 0,
+            "units": "m"
+        },
+        "VSM01_SW2": {
+            "data": 17.692157255262142,
+            "description": "Spectral moments (0,1) secondary swell waved speed",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "VLM01_WW": {
+            "data": 20.19900977899632,
+            "description": "Spectral moments (0,1) wind wave wavelength",
+            "minval": 0,
+            "units": "m"
+        },
+        "VSM01_WW": {
+            "data": 5.6157759967375895,
+            "description": "Spectral moments (0,1) wind wave speed",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "info": {
+            "bulletin_date": "20220616-07:35:00",
+            "update_frequency": "12-hourly",
+            "available_timesteps": "3-hourly",
+            "spatial_resolution": "1/12th degree = 9.25 km"
+        }
+    },
+    "physics": {
+        "thetao": {
+            "data": 23.46220852533981,
+            "description": "Temperature",
+            "units": "degrees_C"
+        },
+        "uo": {
+            "data": -0.21084221055511326,
+            "description": "Eastward water current velocity component",
+            "units": "m s-1"
+        },
+        "vo": {
+            "data": 0.0009562466286787696,
+            "description": "Northward water current velocity component",
+            "units": "m s-1"
+        },
+        "info": {
+            "bulletin_date": "2022-06-16 00:00:00",
+            "update_frequency": "1-daily",
+            "available_timesteps": "1-hourly",
+            "spatial_resolution": "1/12th degree = 9.25 km"
+        }
+    },
+    "biogeochemistry": {
+        "chl": {
+            "data": 0.07027691525096695,
+            "description": "Total Chlorophyll (proxy for how much biological activity there is)",
+            "minval": 0,
+            "maxval": 5,
+            "units": "mg m-3"
+        },
+        "info": {
+            "bulletin_date": "2022-06-15 00:00:00",
+            "update_frequency": "1-weekly",
+            "available_timesteps": "1-daily",
+            "spatial_resolution": "1/12th degree = 9.25 km"
+        }
+    }
+}
