@@ -71,7 +71,7 @@ class point_conditions:
         """
         Parameters
         ----------
-        atmospheric_data : xr.Dataset
+        dataset : xr.Dataset
             GFS dataset with conditions that we want to use.
         """
 
@@ -140,7 +140,7 @@ class point_conditions:
         """
         Parameters
         ----------
-        atmospheric_data : xr.Dataset
+        dataset : xr.Dataset
             Bathymetry dataset that we want to use.
         """
         assert type(dataset) == xr.core.dataset.Dataset
@@ -157,7 +157,7 @@ class point_conditions:
         """
         parameters
         ----------
-        atmospheric_data : xr.Dataset
+        dataset : xr.Dataset
             CMEMS wave dataset with conditions that we want to use.
         """
         assert type(dataset) == xr.core.dataset.Dataset
