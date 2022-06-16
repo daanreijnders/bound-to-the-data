@@ -1,6 +1,6 @@
 cache/
 output/
-!output/example-output.json
+!output/example_output.json
 __pycache__/
 credentials.json
 GFS_vars.txt
