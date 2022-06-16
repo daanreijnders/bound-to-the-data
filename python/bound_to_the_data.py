@@ -441,6 +441,8 @@ if __name__ == "__main__":
         # Check if there is a path in the filename. If not, make sure that we write to the output directory.
         if fname[0] not in [".", "/"]:
             fname = "output/" + fname
+        if fname[-5:] != '.json':
+            fname = fname + '.json'
     else:
         fname = f"output/conditions_lon_{args.lon:.3f}_lat_{args.lat:.3f}_time_{ts_str}.json"
     conditions.json_dump(fname)
