@@ -187,6 +187,12 @@ def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = Tru
         data = xr.open_dataset(NetCDF4DataStore(data))
         data['lon'] = data['lon'] - 360
     
+    # On 21 June, it occured that NOAA used different time coordinate names. If this is the case,
+    # rename back to the original coordinate name. 
+    if 'reftime1' in data.coords:
+        data = data.rename({'reftime1' : 'reftime'})
+    if 'time1' in data.coords:
+        data = data.rename({'time1' : 'time'})
     logger.info(f"Data succesfully loaded for {data.time.data[0]}, \n"
                  f"initialized at {data.reftime.data[0]}")
     
