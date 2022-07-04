@@ -84,7 +84,7 @@
             "units": "m/s"
         },
         "wind_10m_angle": {
-            "description": "Wind angle at 20 meters height (angle where wind points towards)",
+            "description": "Wind angle at 10 meters height (angle where wind points towards)",
             "minval": 0,
             "maxval": 1,
             "units": "degrees (0 is north, clockwise)"
