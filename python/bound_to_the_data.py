@@ -118,6 +118,11 @@ class point_conditions:
         self.conditions['atmospheric']['wind_10m_angle']['data'] = np.arctan2(self.conditions['atmospheric']['wind_10m_u']['data'], self.conditions['atmospheric']['wind_10m_v']['data'])/np.pi*180
         if self.conditions['atmospheric']['wind_10m_angle']['data'] < 0:
             self.conditions['atmospheric']['wind_10m_angle']['data'] += 360
+        # Determine 2m wind conditions using logarithmic profile.
+        self.conditions['atmospheric']['wind_2m_u']['data'] = physics.log_wind_profile(2, self.conditions['atmospheric']['wind_10m_u']['data']) 
+        self.conditions['atmospheric']['wind_2m_v']['data'] = physics.log_wind_profile(2, self.conditions['atmospheric']['wind_10m_v']['data']) 
+        self.conditions['atmospheric']['wind_2m_speed']['data'] = np.sqrt(self.conditions['atmospheric']['wind_2m_u']['data']**2 + self.conditions['atmospheric']['wind_2m_v']['data']**2)
+        self.conditions['atmospheric']['wind_2m_angle']['data'] = self.conditions['atmospheric']['wind_10m_angle']['data']
         self.conditions['atmospheric']['wind_20m_u']['data'] = float(atmos_data_interp["u-component_of_wind_height_above_ground"].sel(height_above_ground4 = 20))
         self.conditions['atmospheric']['wind_20m_v']['data'] = float(atmos_data_interp["v-component_of_wind_height_above_ground"].sel(height_above_ground4 = 20))
         self.conditions['atmospheric']['wind_20m_speed']['data'] = np.sqrt(self.conditions['atmospheric']['wind_20m_u']['data']**2 + self.conditions['atmospheric']['wind_20m_v']['data']**2)

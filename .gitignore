@@ -7,3 +7,4 @@ GFS_vars.txt
 DEBUG.ipynb
 .ipynb_checkpoints
 .vscode
+.DS_STORE

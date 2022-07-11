@@ -68,6 +68,37 @@ def fogginess(fsi=None, T2m=None, Td2m=None, T850=None, W850=None):
     return fogginess_val
 
 
+def log_wind_profile(z_2, u_1, z_1 = 10.):
+    """
+    Assuming that the wind follows a logarithmic profile, 
+    this function computes the strength of the wind at a requested height z_2
+    based on the wind given (u_1) at a different height (z_1 = 10m by default).
+    
+    Parameters
+    ----------
+    z_2 : float, int
+        height to request wind at [m]
+
+    u_1 : float, int
+        Wind speed at z_1 [m/s]
+
+    z_1 : float, int
+        Height that u_1 is specified at [m]
+    
+    Returns
+    -------
+    u_2 : float
+        Wind speed at z_2 [m/s]
+    """
+
+    z_0 = 0.0002 # Roughness length for open sea [meters]
+    d = 0.01     # Zero-plane displacement
+
+    u_2  = u_1 * np.log((z_2 - d) / z_0) / np.log((z_1 - d) / z_0)
+
+    return u_2
+
+
 def dispersion_relation(kappa, H):
     """
     Computes radial frequency based on wavenumber for capillary-gravity waves.

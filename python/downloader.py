@@ -147,7 +147,9 @@ def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = Tru
                             "Dewpoint_temperature_height_above_ground",
                             "Temperature_height_above_ground",
                             "Temperature_isobaric",
-                            "Storm_relative_helicity_height_above_ground_layer"
+                            "Storm_relative_helicity_height_above_ground_layer",
+                            "Convective_available_potential_energy_surface",
+                            "Convective_available_potential_energy_pressure_difference_layer"
                              )
         logger.info("Sending in query for data.")    
         data_left = ncss.get_data(query_left)
@@ -180,7 +182,9 @@ def load_gfs_online(lon, lat, time = datetime.datetime.utcnow(), dump_vars = Tru
                         "Dewpoint_temperature_height_above_ground",
                         "Temperature_height_above_ground",
                         "Temperature_isobaric",
-                        "Storm_relative_helicity_height_above_ground_layer"
+                        "Storm_relative_helicity_height_above_ground_layer",
+                        "Convective_available_potential_energy_surface",
+                        "Convective_available_potential_energy_pressure_difference_layer",
                          )
         logger.info("Sending in query for data.")
         data = ncss.get_data(query)
