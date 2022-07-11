@@ -89,6 +89,27 @@
             "maxval": 1,
             "units": "degrees (0 is north, clockwise)"
         },
+        "wind_2m_u": {
+            "description": "u-component of wind at 2 meters height. Computed from 10m using logarithmic wind profile.",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "wind_2m_v": {
+            "description": "v-component of wind at 2 meters height. Computed from 10m using logarithmic wind profile.",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "wind_2m_speed": {
+            "description": "Wind speed at 2 meters height.",
+            "minval": 0,
+            "units": "m/s"
+        },
+        "wind_2m_angle": {
+            "description": "Wind angle at 2 meters height (angle where wind points towards). Assumed same as 10m",
+            "minval": 0,
+            "maxval": 1,
+            "units": "degrees (0 is north, clockwise)"
+        },
         "wind_20m_u": {
             "description": "u-component of wind at 20 meters height",
             "units": "m/s"
