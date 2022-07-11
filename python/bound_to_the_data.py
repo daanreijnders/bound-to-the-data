@@ -90,6 +90,7 @@ class point_conditions:
         
         self.atmospheric_vars = ['clouds_high', 'clouds_middle', 'clouds_low', 
                                  'temperature_2m', 'fog_stability_index', 
+                                 'wind_2m_u', 'wind_2m_v', 'wind_2m_speed', 'wind_2m_angle', 
                                  'wind_10m_u', 'wind_10m_v', 'wind_10m_speed', 'wind_10m_angle', 
                                  'wind_20m_u', 'wind_20m_v', 'wind_20m_speed', 'wind_20m_angle', 
                                  'precip_rate', 
